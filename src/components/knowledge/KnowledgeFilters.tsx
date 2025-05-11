@@ -191,11 +191,14 @@ export function KnowledgeFilters({ filters, onFilterChange }: KnowledgeFiltersPr
                 <option value="">-- Todas las categorías --</option>
                 {categories?.map((category: Category) => (
                   <option key={category.id} value={category.id}>
-                    {category.name}
+                    {category.name} {category.isPublic ? '(Pública)' : ''}
                   </option>
                 ))}
               </select>
               {categoriesLoading && <p className="text-sm text-gray-500 mt-1">Cargando categorías...</p>}
+              {categories && categories.length === 0 && (
+                <p className="text-sm text-gray-500 mt-1">No hay categorías disponibles</p>
+              )}
             </div>
 
             {/* Filtro por etiquetas */}

@@ -11,6 +11,7 @@ export interface Category {
   parentId?: string | null;
   color?: string;
   icon?: string;
+  isPublic?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +31,7 @@ export interface CategoriesHookResult {
 
 const fetchCategories = async (): Promise<Category[]> => {
   try {
+    // Usamos la ruta pública que devolverá categorías basadas en el estado de autenticación
     const response = await apiClient.get('/categories');
     return response.data.data || response.data;
   } catch (error) {
@@ -49,8 +51,8 @@ const fetchCategories = async (): Promise<Category[]> => {
   }
 };
 
-// Añadir opciones con valores predeterminados
-export function useCategories(options: CategoriesOptions = { requireAuth: true }): CategoriesHookResult {
+// El hook ahora funciona con la API pública y no requiere autenticación explícita
+export function useCategories(options: CategoriesOptions = { requireAuth: false }): CategoriesHookResult {
   const [tokenExists, setTokenExists] = useState<boolean>(false);
   
   // Verificar si existe el token en localStorage
@@ -62,8 +64,8 @@ export function useCategories(options: CategoriesOptions = { requireAuth: true }
   const queryResult = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
-    // Permitir cargar sin token si requireAuth es falso
-    enabled: options.requireAuth ? tokenExists : true,
+    // Ahora siempre habilitamos la consulta porque la API es accesible sin autenticación
+    enabled: true,
     retry: 1,
   });
 

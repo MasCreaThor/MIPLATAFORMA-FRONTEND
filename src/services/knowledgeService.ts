@@ -43,12 +43,26 @@ export const knowledgeService = {
   },
 
   createKnowledgeItem: async (knowledgeItem: Partial<KnowledgeItem>): Promise<KnowledgeItem> => {
-    const response = await apiClient.post(KNOWLEDGE_ENDPOINT, knowledgeItem);
+    // Limpiar datos antes de enviar
+    const cleanData = { ...knowledgeItem };
+
+    if (cleanData.categoryId === '') {
+      cleanData.categoryId = undefined;
+    }
+    
+    const response = await apiClient.post(KNOWLEDGE_ENDPOINT, cleanData);
     return response.data.data || response.data;
   },
-
+  
   updateKnowledgeItem: async (id: string, knowledgeItem: Partial<KnowledgeItem>): Promise<KnowledgeItem> => {
-    const response = await apiClient.patch(`${KNOWLEDGE_ENDPOINT}/${id}`, knowledgeItem);
+    // Limpiar datos antes de enviar
+    const cleanData = { ...knowledgeItem };
+
+    if (cleanData.categoryId === '') {
+      cleanData.categoryId = undefined;
+    }
+    
+    const response = await apiClient.patch(`${KNOWLEDGE_ENDPOINT}/${id}`, cleanData);
     return response.data.data || response.data;
   },
 

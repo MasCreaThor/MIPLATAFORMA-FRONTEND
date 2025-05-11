@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SaveIcon } from 'lucide-react';
+import { SaveIcon, InfoIcon } from 'lucide-react';
 import { KnowledgeItem, KnowledgeItemType, SolutionDetails } from '@/types/knowledge';
 import { knowledgeService } from '@/services/knowledgeService';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { Alert } from '@/components/ui/alert';
 import { TagInput } from '@/components/tags/tag-input';
 import { CodeEditor } from '@/components/shared/CodeEditor';
 import { Category, useCategories } from '@/hooks/useCategories';
+import { LoadingSpinner } from '@/components/ui/skeleton';
 
 // Esquema de validación para el formulario
 const knowledgeItemSchema = z.object({
@@ -46,7 +47,9 @@ export function KnowledgeForm({ initialData, isEdit = false }: KnowledgeFormProp
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { categories, isLoading: categoriesLoading } = useCategories();
+  
+  // Usamos requireAuth: false para obtener categorías incluso sin autenticación
+  const { categories, isLoading: categoriesLoading, error: categoriesError } = useCategories({ requireAuth: false });
 
   // Inicializar formulario con datos existentes o valores por defecto
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<KnowledgeFormData>({
@@ -104,6 +107,13 @@ export function KnowledgeForm({ initialData, isEdit = false }: KnowledgeFormProp
         </Alert>
       )}
 
+      {categoriesError && (
+        <Alert variant="warning">
+          <InfoIcon className="h-4 w-4 mr-2" />
+          Hubo un problema al cargar las categorías. Puedes continuar sin seleccionar una categoría o intentar más tarde.
+        </Alert>
+      )}
+
       <div className="space-y-4">
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-700">
@@ -137,19 +147,29 @@ export function KnowledgeForm({ initialData, isEdit = false }: KnowledgeFormProp
           <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700">
             Categoría
           </label>
-          <Select
-            id="categoryId"
-            {...register('categoryId')}
-            disabled={categoriesLoading}
-            error={errors.categoryId?.message}
-          >
-            <option value="">-- Selecciona una categoría --</option>
-            {categories?.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </Select>
+          {categoriesLoading ? (
+            <div className="h-10 flex items-center">
+              <LoadingSpinner />
+              <span className="ml-2 text-sm text-gray-500">Cargando categorías...</span>
+            </div>
+          ) : (
+            <Select
+              id="categoryId"
+              {...register('categoryId')}
+              disabled={categoriesLoading || !!categoriesError}
+              error={errors.categoryId?.message}
+            >
+              <option value="">-- Selecciona una categoría --</option>
+              {categories?.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name} {category.isPublic ? '(Pública)' : ''}
+                </option>
+              ))}
+            </Select>
+          )}
+          <p className="mt-1 text-xs text-gray-500">
+            {categories && categories.length === 0 ? 'No hay categorías disponibles.' : ''}
+          </p>
         </div>
 
         {/* Contenido específico según el tipo */}
