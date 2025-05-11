@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Header } from '@/components/layouts/Header';
-import { useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/Authprovider';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { useEffect } from 'react';
 

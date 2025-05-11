@@ -2,7 +2,7 @@
 'use client';
 
 import { QueryProvider } from './query-provider';
-import { AuthProvider } from './AuthProvider';
+import { AuthProvider } from './Authprovider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

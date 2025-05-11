@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/providers/AuthProvider';
+import { useAuth } from '@/providers/Authprovider';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 
 // Layout para páginas de autenticación (login, registro)
