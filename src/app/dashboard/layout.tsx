@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Header } from '@/components/layouts/Header';
-import { useAuth } from '@/providers/Authprovider';
+import { useAuth } from '@/providers/AuthProvider';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 
 export default function DashboardLayout({
