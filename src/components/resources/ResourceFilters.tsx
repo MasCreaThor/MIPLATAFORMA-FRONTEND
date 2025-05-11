@@ -8,7 +8,7 @@ import {
   ChevronUpIcon, 
   XCircleIcon 
 } from 'lucide-react';
-import { ResourceType, ResourceFilters } from '@/types/resource';
+import { ResourceType, ResourceFilters as ResourceFiltersType } from '@/types/resource';
 import { Category } from '@/services/categoryService';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,8 +17,8 @@ import { useCategories } from '@/hooks/useCategories';
 import { useTags } from '@/hooks/useTags';
 
 interface ResourceFiltersProps {
-  filters: ResourceFilters;
-  onFilterChange: (filters: ResourceFilters) => void;
+  filters: ResourceFiltersType;
+  onFilterChange: (filters: ResourceFiltersType) => void;
 }
 
 export function ResourceFilters({ filters, onFilterChange }: ResourceFiltersProps) {

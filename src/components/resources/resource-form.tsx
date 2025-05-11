@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDropzone } from 'react-dropzone';
 import { 
@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Resource, ResourceType } from '@/types/resource';
 import { resourceService } from '@/services/resourceService';
-import { categoryService } from '@/services/categoryService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,7 +34,7 @@ const resourceSchema = z.object({
   url: z.string().url('URL inválida').optional().or(z.literal('')),
   categoryId: z.string().optional().or(z.literal('')),
   tags: z.array(z.string()).optional(),
-  isPublic: z.boolean().default(false),
+  isPublic: z.boolean(),
 });
 
 type ResourceFormData = z.infer<typeof resourceSchema>;
@@ -78,7 +77,7 @@ export function ResourceForm({ initialData, isEdit = false }: ResourceFormProps)
     multiple: false,
   });
 
-  const onSubmit = async (data: ResourceFormData) => {
+  const onSubmit: SubmitHandler<ResourceFormData> = async (data) => {
     try {
       setIsSubmitting(true);
       setError(null);

@@ -1,5 +1,12 @@
 // src/lib/api/apiClient.ts
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+
+// Extendemos la interfaz InternalAxiosRequestConfig para añadir _retry
+declare module 'axios' {
+  export interface InternalAxiosRequestConfig {
+    _retry?: boolean;
+  }
+}
 
 // Obtenemos la base URL desde variables de entorno
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -15,7 +22,7 @@ const apiClient: AxiosInstance = axios.create({
 
 // Interceptor para añadir el token a las solicitudes
 apiClient.interceptors.request.use(
-  (config: any): AxiosRequestConfig => {
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     // Obtenemos el token del localStorage (solo en el cliente)
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
@@ -36,7 +43,7 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError): Promise<any> => {
-    const originalRequest = error.config as any;
+    const originalRequest = error.config as InternalAxiosRequestConfig;
 
     // Intentar renovar el token si recibimos un 401
     if (error.response?.status === 401 && !originalRequest._retry) {

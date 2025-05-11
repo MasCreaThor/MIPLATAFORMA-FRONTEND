@@ -1,6 +1,6 @@
 // src/services/dashboardService.ts
 import apiClient from '@/lib/api/apiClient';
-import { DashboardConfig, DashboardStats } from '@/types/dashboard';
+import { DashboardConfig, DashboardStats, DashboardWidget } from '@/types/dashboard';
 
 const DASHBOARD_ENDPOINT = '/dashboard';
 

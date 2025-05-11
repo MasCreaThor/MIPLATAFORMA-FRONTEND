@@ -2,28 +2,36 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Header } from '@/components/layouts/Header';
 import { useAuth } from '@/providers/AuthProvider';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { useEffect } from 'react';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
-  if (isLoading) {
+  // Redirigir si no está autenticado
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading) {
     return <LoadingScreen />;
   }
 
-  if (!isAuthenticated) {
-    // Redireccionar al login si no está autenticado
-    window.location.href = '/login';
+  // No renderizar el contenido si no hay usuario
+  if (!user) {
     return null;
   }
 

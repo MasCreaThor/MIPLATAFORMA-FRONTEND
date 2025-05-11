@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { KnowledgeStats } from '@/types/dashboard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 

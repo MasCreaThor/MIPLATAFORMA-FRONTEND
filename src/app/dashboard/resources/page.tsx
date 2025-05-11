@@ -4,10 +4,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { resourcesService } from '@/services/resourceService';
-import { Resource, ResourceType } from '@/types/resource';
+import { Resource, ResourceType, ResourceFilters } from '@/types/resource';
 import { Button } from '@/components/ui/button';
 import { ResourceList } from '@/components/resources/ResourceList';
-import { ResourceFilters } from '@/components/resources/ResourceFilters';
+import { ResourceFilters as ResourceFiltersComponent } from '@/components/resources/ResourceFilters';
 import { CreateResourceDialog } from '@/components/resources/CreateResourceDialog';
 import { PlusIcon } from 'lucide-react';
 
@@ -15,7 +15,7 @@ export default function ResourcesPage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<ResourceFilters>({
     search: '',
     types: [] as ResourceType[],
     categoryId: '',
@@ -40,6 +40,13 @@ export default function ResourcesPage() {
     }
   };
 
+  const handleFilterChange = (newFilters: ResourceFilters) => {
+    setFilters(current => ({
+      ...current,
+      ...newFilters
+    }));
+  };
+
   const handleCreateResource = async (resource: Resource) => {
     setShowCreateDialog(false);
     await fetchResources();
@@ -59,7 +66,7 @@ export default function ResourcesPage() {
         </Button>
       </div>
 
-      <ResourceFilters filters={filters} onFilterChange={setFilters} />
+      <ResourceFiltersComponent filters={filters} onFilterChange={handleFilterChange} />
       
       <ResourceList 
         resources={resources} 
