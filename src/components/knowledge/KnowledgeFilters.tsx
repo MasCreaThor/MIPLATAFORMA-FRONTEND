@@ -9,12 +9,13 @@ import {
   XCircleIcon 
 } from 'lucide-react';
 import { KnowledgeItemType, KnowledgeItemFilters } from '@/types/knowledge';
-import { Category } from '@/services/categoryService';
+
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TagBadge } from '@/components/tags/tag-badge';
-import { useCategories } from '@/hooks/useCategories';
+import { Category, useCategories } from '@/hooks/useCategories';
 import { useTags } from '@/hooks/useTags';
+import { Alert } from '@/components/ui/alert';
 
 interface KnowledgeFiltersProps {
   filters: KnowledgeItemFilters;
@@ -28,18 +29,32 @@ export function KnowledgeFilters({ filters, onFilterChange }: KnowledgeFiltersPr
   const [selectedTags, setSelectedTags] = useState<string[]>(filters.tags || []);
   const [isPublic, setIsPublic] = useState<boolean | undefined>(filters.isPublic);
   
-  const { categories, isLoading: categoriesLoading } = useCategories();
-  const { tags, isLoading: tagsLoading } = useTags({ limit: 20, popular: true });
+  const { categories, isLoading: categoriesLoading, error: categoriesError, authError } = useCategories();
+  const { tags, isLoading: tagsLoading, error: tagsError } = useTags({ limit: 20, popular: true });
 
   // Aplicar los filtros cuando cambien
   useEffect(() => {
-    onFilterChange({
-      ...filters,
-      types: selectedTypes.length > 0 ? selectedTypes : undefined,
-      categoryId: selectedCategory || undefined,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
-      isPublic,
-    });
+    // Construir un objeto de filtros limpio
+    const newFilters: KnowledgeItemFilters = {};
+    
+    // Solo incluir valores significativos
+    if (selectedTypes.length > 0) {
+      newFilters.types = selectedTypes;
+    }
+    
+    if (selectedCategory) {
+      newFilters.categoryId = selectedCategory;
+    }
+    
+    if (selectedTags.length > 0) {
+      newFilters.tags = selectedTags;
+    }
+    
+    if (isPublic !== undefined) {
+      newFilters.isPublic = isPublic;
+    }
+    
+    onFilterChange(newFilters);
   }, [selectedTypes, selectedCategory, selectedTags, isPublic]);
 
   const toggleType = (type: KnowledgeItemType) => {
@@ -123,6 +138,25 @@ export function KnowledgeFilters({ filters, onFilterChange }: KnowledgeFiltersPr
 
         {isExpanded && (
           <div className="mt-4 space-y-4">
+            {/* Mostrar mensajes de error si existen */}
+            {authError && (
+              <Alert variant="destructive">
+                Error de autenticación. Por favor, vuelva a iniciar sesión.
+              </Alert>
+            )}
+            
+            {categoriesError && !authError && (
+              <Alert variant="destructive">
+                Error al cargar categorías. Por favor, intente de nuevo.
+              </Alert>
+            )}
+            
+            {tagsError && (
+              <Alert variant="destructive">
+                Error al cargar etiquetas. Por favor, intente de nuevo.
+              </Alert>
+            )}
+            
             {/* Filtro por tipo */}
             <div>
               <h4 className="text-sm font-medium mb-2">Tipo de elemento</h4>
@@ -152,15 +186,16 @@ export function KnowledgeFilters({ filters, onFilterChange }: KnowledgeFiltersPr
                 value={selectedCategory}
                 onChange={handleCategoryChange}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                disabled={categoriesLoading}
+                disabled={categoriesLoading || !!categoriesError || !!authError}
               >
-                <option value="">Todas las categorías</option>
+                <option value="">-- Todas las categorías --</option>
                 {categories?.map((category: Category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
               </select>
+              {categoriesLoading && <p className="text-sm text-gray-500 mt-1">Cargando categorías...</p>}
             </div>
 
             {/* Filtro por etiquetas */}

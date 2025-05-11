@@ -16,7 +16,7 @@ import { Select } from '@/components/ui/select';
 import { Alert } from '@/components/ui/alert';
 import { TagInput } from '@/components/tags/tag-input';
 import { CodeEditor } from '@/components/shared/CodeEditor';
-import { useCategories } from '@/hooks/useCategories';
+import { Category, useCategories } from '@/hooks/useCategories';
 
 // Esquema de validación para el formulario
 const knowledgeItemSchema = z.object({
