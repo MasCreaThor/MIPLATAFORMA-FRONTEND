@@ -12,6 +12,7 @@ import { ProjectStatsWidget } from '@/components/dashboard/project-stats-widget'
 import { RecentActivityWidget } from '@/components/dashboard/recent-activity-widget';
 import { PopularTagsWidget } from '@/components/dashboard/popular-tags-widget';
 import { ActivityTimelineWidget } from '@/components/dashboard/activity-timeline-widget';
+import { KnowledgeInsightsWidget } from '@/components/dashboard/knowledge-insights-widget';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -74,8 +75,13 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {stats && <RecentActivityWidget activities={stats.recentActivity} />}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          {stats && <RecentActivityWidget activities={stats.recentActivity} />}
+        </div>
+        <div>
+          <KnowledgeInsightsWidget limit={5} />
+        </div>
       </div>
     </div>
   );
@@ -101,6 +107,27 @@ function DashboardSkeleton() {
           <Card className="p-6">
             <Skeleton className="h-6 w-40 mb-4" />
             <Skeleton className="h-64 w-full" />
+          </Card>
+        </div>
+        <Card className="p-6">
+          <Skeleton className="h-6 w-32 mb-4" />
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="p-6">
+            <Skeleton className="h-6 w-40 mb-4" />
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
           </Card>
         </div>
         <Card className="p-6">
