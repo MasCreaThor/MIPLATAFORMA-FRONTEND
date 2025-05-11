@@ -189,8 +189,11 @@ export function KnowledgeFilters({ filters, onFilterChange }: KnowledgeFiltersPr
                 disabled={categoriesLoading || !!categoriesError || !!authError}
               >
                 <option value="">-- Todas las categorías --</option>
-                {categories?.map((category: Category) => (
-                  <option key={category.id} value={category.id}>
+                {categories?.map((category: Category, index) => (
+                  <option 
+                    key={`category-${index}-${category.id || ''}`} 
+                    value={category.id || ''}
+                  >
                     {category.name} {category.isPublic ? '(Pública)' : ''}
                   </option>
                 ))}

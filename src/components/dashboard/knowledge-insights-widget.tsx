@@ -139,9 +139,9 @@ export function KnowledgeInsightsWidget({ limit = 5 }: KnowledgeInsightsWidgetPr
                 <p className="text-sm text-gray-500">No hay elementos de conocimiento</p>
               ) : (
                 <ul className="space-y-2">
-                  {recentItems.map((item) => (
+                  {recentItems.map((item, index) => (
                     <li 
-                      key={item.id}
+                      key={item.id || `recent-item-${index}`}
                       className="flex items-center p-2 hover:bg-gray-50 rounded-md cursor-pointer"
                       onClick={() => handleItemClick(item.id)}
                     >

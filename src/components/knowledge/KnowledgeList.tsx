@@ -37,12 +37,16 @@ export function KnowledgeList({
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  const filteredItems = items?.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.content && item.content.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (item.codeContent && item.codeContent.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (item.tags && item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
-  ) || [];
+// Asegurarse de que nunca sea undefined
+const safeItems = items || [];
+
+// Usar safeItems en el filtrado
+const filteredItems = safeItems.filter(item => 
+  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  (item.content && item.content.toLowerCase().includes(searchQuery.toLowerCase())) ||
+  (item.codeContent && item.codeContent.toLowerCase().includes(searchQuery.toLowerCase())) ||
+  (item.tags && item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+);
 
   const getItemIcon = (type: KnowledgeItemType) => {
     switch (type) {
@@ -123,9 +127,9 @@ export function KnowledgeList({
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItems.map((item) => (
-            <div 
-              key={item.id}
+          {filteredItems.map((item, index) => (
+            <div
+              key={item.id || `knowledge-item-${index}`}
               className="cursor-pointer"
               onClick={() => handleItemClick(item.id)}
             >

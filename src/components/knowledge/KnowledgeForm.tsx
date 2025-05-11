@@ -82,14 +82,14 @@ export function KnowledgeForm({ initialData, isEdit = false }: KnowledgeFormProp
     try {
       setIsSubmitting(true);
       setError(null);
-
-      // Crear o actualizar elemento
+  
+      // Si estás usando mockPeopleId o algún ID fijo, ese es el problema
       if (isEdit && initialData?.id) {
         await knowledgeService.updateKnowledgeItem(initialData.id, data);
       } else {
         await knowledgeService.createKnowledgeItem(data);
       }
-
+  
       router.push('/dashboard/knowledge');
     } catch (err: any) {
       console.error('Error submitting knowledge item:', err);
@@ -98,7 +98,6 @@ export function KnowledgeForm({ initialData, isEdit = false }: KnowledgeFormProp
       setIsSubmitting(false);
     }
   };
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {error && (
@@ -159,12 +158,15 @@ export function KnowledgeForm({ initialData, isEdit = false }: KnowledgeFormProp
               disabled={categoriesLoading || !!categoriesError}
               error={errors.categoryId?.message}
             >
-              <option value="">-- Selecciona una categoría --</option>
-              {categories?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name} {category.isPublic ? '(Pública)' : ''}
-                </option>
-              ))}
+            <option value="">-- Selecciona una categoría --</option>
+            {categories?.map((category, index) => (
+              <option 
+                key={`category-${index}`} 
+                value={category.id || ''}
+              >
+                {category.name} {category.isPublic ? '(Pública)' : ''}
+              </option>
+            ))}
             </Select>
           )}
           <p className="mt-1 text-xs text-gray-500">
