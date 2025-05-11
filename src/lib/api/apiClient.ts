@@ -20,6 +20,26 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 15000, // 15 segundos
 });
 
+// Variable para controlar si estamos en proceso de renovación de token
+let isRefreshing = false;
+// Cola de solicitudes pendientes para reintentar después de renovar el token
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: AxiosError | null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 // Interceptor para añadir el token a las solicitudes
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
@@ -28,10 +48,9 @@ apiClient.interceptors.request.use(
       const token = localStorage.getItem('token');
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
-        // Agregar log para depurar
         console.debug("Token added to request:", config.url);
       } else if (!token) {
-        console.warn("No token found in localStorage for request:", config.url);
+        console.debug("No token found for request:", config.url);
       }
     }
     return config;
@@ -50,22 +69,38 @@ apiClient.interceptors.response.use(
   async (error: AxiosError): Promise<any> => {
     const originalRequest = error.config as InternalAxiosRequestConfig;
 
-    // Registro detallado del error para depuración
-    console.error(`API error for ${originalRequest?.url}:`, error.response?.status, error.response?.data);
-
-    // Intentar renovar el token si recibimos un 401
+    // Si recibimos un 401 (No autorizado) y no estamos en un reintento
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Si ya estamos renovando el token, poner esta solicitud en la cola
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            if (token && originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return axios(originalRequest);
+          })
+          .catch(err => {
+            return Promise.reject(err);
+          });
+      }
+
       originalRequest._retry = true;
-      console.log("Attempting to refresh token...");
+      isRefreshing = true;
 
       try {
         // Obtenemos el refresh token
         const refreshToken = localStorage.getItem('refreshToken');
+        
         if (!refreshToken) {
           console.error("No refresh token available");
           throw new Error('No refresh token available');
         }
 
+        console.log("Attempting to refresh token...");
+        
         // Renovamos el token
         const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {
           refreshToken,
@@ -78,14 +113,21 @@ apiClient.interceptors.response.use(
         localStorage.setItem('refreshToken', refresh_token);
         console.log("Token refreshed successfully");
         
-        // Actualizamos el header y reintentamos la solicitud
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        // Actualizamos el header y procesamos la cola
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        }
+        processQueue(null, access_token);
+        isRefreshing = false;
+        
         return axios(originalRequest);
       } catch (refreshError) {
-        // Si falla la renovación, limpiamos tokens y redirigimos al login
+        // Si falla la renovación, limpiamos tokens y procesamos la cola con error
         console.error("Token refresh failed:", refreshError);
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        processQueue(refreshError as AxiosError);
+        isRefreshing = false;
         
         if (typeof window !== 'undefined') {
           console.log("Redirecting to login page...");

@@ -2,7 +2,7 @@
 import { useQuery, QueryObserverResult, RefetchOptions } from '@tanstack/react-query';
 import apiClient from '@/lib/api/apiClient';
 import { useState, useEffect } from 'react';
-import { AxiosError } from 'axios'; // Importamos AxiosError
+import { AxiosError } from 'axios';
 
 export interface Category {
   id: string;
@@ -15,13 +15,17 @@ export interface Category {
   updatedAt: string;
 }
 
-// Definir la interfaz de retorno para incluir authError
+// Opciones para el hook
+export interface CategoriesOptions {
+  requireAuth?: boolean;  // Indica si se requiere autenticación para cargar categorías
+}
+
 export interface CategoriesHookResult {
   categories: Category[] | undefined;
   isLoading: boolean;
   error: Error | null;
   refetch: (options?: RefetchOptions) => Promise<QueryObserverResult<Category[], Error>>;
-  authError: boolean;
+  authError: boolean | undefined;
 }
 
 const fetchCategories = async (): Promise<Category[]> => {
@@ -30,7 +34,6 @@ const fetchCategories = async (): Promise<Category[]> => {
     return response.data.data || response.data;
   } catch (error) {
     console.error("Error fetching categories:", error);
-    // Usamos el tipo AxiosError para manejar el error correctamente
     if (error instanceof Error) {
       const axiosError = error as AxiosError;
       if (axiosError.response) {
@@ -46,7 +49,8 @@ const fetchCategories = async (): Promise<Category[]> => {
   }
 };
 
-export function useCategories(): CategoriesHookResult {
+// Añadir opciones con valores predeterminados
+export function useCategories(options: CategoriesOptions = { requireAuth: true }): CategoriesHookResult {
   const [tokenExists, setTokenExists] = useState<boolean>(false);
   
   // Verificar si existe el token en localStorage
@@ -58,9 +62,9 @@ export function useCategories(): CategoriesHookResult {
   const queryResult = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
-    // Solo habilitar la consulta si existe un token
-    enabled: tokenExists,
-    retry: 1, // Limitar los reintentos en caso de error
+    // Permitir cargar sin token si requireAuth es falso
+    enabled: options.requireAuth ? tokenExists : true,
+    retry: 1,
   });
 
   return {
@@ -68,7 +72,7 @@ export function useCategories(): CategoriesHookResult {
     isLoading: queryResult.isLoading,
     error: queryResult.error,
     refetch: queryResult.refetch,
-    // Indicar si hay un problema con la autenticación
-    authError: !tokenExists,
+    // Indicar si hay un problema con la autenticación (solo si requireAuth es true)
+    authError: options.requireAuth && !tokenExists,
   };
 }
