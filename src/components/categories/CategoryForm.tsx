@@ -6,20 +6,26 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SaveIcon, XIcon } from 'lucide-react';
+import { SaveIcon, XIcon, InfoIcon } from 'lucide-react';
 import { Category } from '@/services/categoryService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Alert } from '@/components/ui/alert';
-import { useRootCategories, useCreateCategory, useUpdateCategory } from '@/hooks/useCategoryOperations';
+import { 
+  useCategories, 
+  useRootCategories, 
+  useCreateCategory, 
+  useUpdateCategory, 
+  useSystemCategories 
+} from '@/hooks/useCategoryOperations';
 
 // Esquema de validación para el formulario
 const categorySchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   description: z.string().optional(),
-  parentId: z.string().optional().or(z.literal('')),
+  parentId: z.string().min(1, 'Debes seleccionar una categoría padre'),
   color: z.string().optional(),
   icon: z.string().optional(),
   isPublic: z.boolean(),
@@ -35,13 +41,43 @@ interface CategoryFormProps {
 export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   
   // Hooks para crear/actualizar categorías
   const { mutateAsync: createCategory, isPending: isCreating } = useCreateCategory();
   const { mutateAsync: updateCategory, isPending: isUpdating } = useUpdateCategory(initialData?.id || '');
   
-  // Hook para obtener categorías para el selector de padres
-  const { data: parentCategories, isLoading: parentCategoriesLoading } = useRootCategories();
+  // Hooks para obtener categorías 
+  const { data: allCategories, isLoading: categoriesLoading } = useCategories();
+  const { data: systemCategories, isLoading: systemCategoriesLoading } = useSystemCategories();
+  
+  // Estado para las categorías padres disponibles
+  const [availableParents, setAvailableParents] = useState<Category[]>([]);
+
+  // Actualizar las categorías padres disponibles cuando cambien las categorías
+  useEffect(() => {
+    if (allCategories) {
+      // Filtrar las categorías que pueden ser padres:
+      // 1. Categorías del sistema
+      // 2. Categorías propias del usuario (excepto la categoría actual en modo edición)
+      const filteredParents = allCategories.filter(category => {
+        // Evitar que una categoría sea su propio padre en modo edición
+        if (isEdit && initialData?.id === category.id) {
+          return false;
+        }
+        
+        // Incluir categorías del sistema y categorías propias
+        return category.isSystem || true;
+      });
+      
+      setAvailableParents(filteredParents);
+      
+      // Si es un formulario de creación nueva, mostrar mensaje informativo
+      if (!isEdit) {
+        setInfo('Solo puedes crear subcategorías bajo las categorías existentes.');
+      }
+    }
+  }, [allCategories, initialData, isEdit]);
 
   // Inicializar formulario con datos existentes o valores por defecto
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<CategoryFormData>({
@@ -58,6 +94,11 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
 
   // Actualiza el color en tiempo real
   const selectedColor = watch('color');
+  const selectedParentId = watch('parentId');
+
+  // Obtener información sobre la categoría padre seleccionada
+  const selectedParent = availableParents.find(category => category.id === selectedParentId);
+  const isSystemParent = selectedParent?.isSystem || false;
 
   const onSubmit: SubmitHandler<CategoryFormData> = async (data) => {
     try {
@@ -68,8 +109,8 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
         ...data,
         name: data.name.trim(), // Eliminar espacios en blanco
         description: data.description?.trim() || undefined,
-        // Convertir parentId vacío a undefined
-        parentId: data.parentId && data.parentId.trim() !== '' ? data.parentId : undefined,
+        // Asegurarse de que parentId sea un string válido
+        parentId: data.parentId.trim(),
         // Asegurarse de que color sea un string válido
         color: data.color && data.color.trim() !== '' ? data.color : undefined,
         // Asegurarse de que icon sea un string válido
@@ -94,6 +135,11 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
     }
   };
 
+  const isParentCategorySystem = () => {
+    const parent = availableParents.find(cat => cat.id === selectedParentId);
+    return parent?.isSystem || false;
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {error && (
@@ -101,8 +147,77 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
           {error}
         </Alert>
       )}
+      
+      {info && (
+        <Alert variant="warning">
+          <InfoIcon className="h-4 w-4 mr-2" />
+          {info}
+        </Alert>
+      )}
 
       <div className="space-y-4">
+        <div>
+          <label htmlFor="parentId" className="block text-sm font-medium text-gray-700 mb-1">
+            Categoría Padre *
+          </label>
+          <Select
+            id="parentId"
+            {...register('parentId')}
+            disabled={categoriesLoading || isEdit}
+            error={errors.parentId?.message}
+          >
+            <option value="">-- Selecciona una categoría padre --</option>
+            
+            {/* Grupo de categorías del sistema */}
+            <optgroup label="Categorías del Sistema">
+              {availableParents
+                .filter(category => category.isSystem)
+                .map(category => (
+                  <option 
+                    key={category.id || `system-category-${category.name}`} 
+                    value={category.id}
+                  >
+                    {category.name}
+                  </option>
+                ))
+              }
+            </optgroup>
+            
+            {/* Grupo de categorías personales */}
+            {availableParents.some(category => !category.isSystem) && (
+              <optgroup label="Mis Categorías">
+                {availableParents
+                  .filter(category => !category.isSystem)
+                  .map(category => (
+                    <option 
+                      key={category.id || `user-category-${category.name}`} 
+                      value={category.id}
+                    >
+                      {category.name}
+                    </option>
+                  ))
+                }
+              </optgroup>
+            )}
+          </Select>
+          
+          {isEdit && (
+            <p className="mt-1 text-xs text-gray-500">
+              No puedes cambiar la categoría padre una vez creada la categoría.
+            </p>
+          )}
+          
+          {isParentCategorySystem() && (
+            <p className="mt-1 text-xs text-emerald-600">
+              Estás creando una subcategoría bajo una categoría del sistema.
+            </p>
+          )}
+          
+          {categoriesLoading && (
+            <p className="mt-1 text-sm text-gray-500">Cargando categorías...</p>
+          )}
+        </div>
+
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
             Nombre *
@@ -124,33 +239,6 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
             {...register('description')}
             error={errors.description?.message}
           />
-        </div>
-
-        <div>
-          <label htmlFor="parentId" className="block text-sm font-medium text-gray-700">
-            Categoría Padre
-          </label>
-          <Select
-            id="parentId"
-            {...register('parentId')}
-            disabled={parentCategoriesLoading}
-            error={errors.parentId?.message}
-          >
-            <option value="">-- Sin categoría padre --</option>
-                          {parentCategories?.map((category, index) => {
-              // Evitar que una categoría sea su propio padre en modo edición
-              if (isEdit && category.id === initialData?.id) return null;
-              
-              return (
-                <option key={category.id || `parent-option-${index}`} value={category.id}>
-                  {category.name}
-                </option>
-              );
-            })}
-          </Select>
-          {parentCategoriesLoading && (
-            <p className="mt-1 text-sm text-gray-500">Cargando categorías...</p>
-          )}
         </div>
 
         <div>
@@ -200,10 +288,10 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
             {...register('isPublic')}
           />
           <label htmlFor="isPublic" className="ml-2 block text-sm text-gray-900">
-            Categoría pública
+            Hacer subcategoría pública
           </label>
           <p className="ml-2 text-xs text-gray-500">
-            Las categorías públicas son visibles para todos los usuarios.
+            Si marcas esta opción, otros usuarios podrán ver esta subcategoría.
           </p>
         </div>
       </div>
@@ -222,7 +310,7 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
           isLoading={isCreating || isUpdating}
         >
           <SaveIcon className="mr-2 h-4 w-4" />
-          {isEdit ? 'Actualizar' : 'Crear'} Categoría
+          {isEdit ? 'Actualizar' : 'Crear'} Subcategoría
         </Button>
       </div>
     </form>

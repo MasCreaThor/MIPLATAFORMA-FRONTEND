@@ -9,6 +9,7 @@ export interface Category {
   color?: string;
   icon?: string;
   isPublic?: boolean;
+  isSystem?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,7 +54,7 @@ const sanitizeCategoryData = (data: any): any => {
 };
 
 export const categoryService = {
-  // Obtener todas las categorías (públicas o privadas dependiendo de la autenticación)
+  // Obtener todas las categorías (sistema + propias)
   getCategories: async (): Promise<Category[]> => {
     try {
       const response = await apiClient.get(CATEGORY_ENDPOINT);
@@ -64,7 +65,18 @@ export const categoryService = {
     }
   },
 
-  // Obtener categorías raíz (sin padre)
+  // Obtener solo las categorías del sistema
+  getSystemCategories: async (): Promise<Category[]> => {
+    try {
+      const response = await apiClient.get(`${CATEGORY_ENDPOINT}/system`);
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Error fetching system categories:', error);
+      throw error;
+    }
+  },
+
+  // Obtener categorías raíz (sistema + propias)
   getRootCategories: async (): Promise<Category[]> => {
     try {
       const response = await apiClient.get(`${CATEGORY_ENDPOINT}/root`);
@@ -105,11 +117,16 @@ export const categoryService = {
     }
   },
 
-  // Crear una nueva categoría (requiere autenticación)
+  // Crear una nueva categoría (requiere parentId)
   createCategory: async (categoryData: CreateCategoryDto): Promise<Category> => {
     try {
       // Limpiar datos antes de enviar
       const cleanData = sanitizeCategoryData(categoryData);
+      
+      // Verificar que tiene parentId (ahora obligatorio)
+      if (!cleanData.parentId) {
+        throw new Error('Se requiere una categoría padre para crear una subcategoría');
+      }
       
       console.log('Sending category data to server:', cleanData);
       
@@ -121,7 +138,7 @@ export const categoryService = {
     }
   },
 
-  // Actualizar una categoría existente (requiere autenticación)
+  // Actualizar una categoría existente
   updateCategory: async (id: string, categoryData: Partial<CreateCategoryDto>): Promise<Category> => {
     try {
       if (!id || typeof id !== 'string' || id.trim() === '') {
@@ -149,7 +166,7 @@ export const categoryService = {
     }
   },
 
-  // Eliminar una categoría (requiere autenticación)
+  // Eliminar una categoría
   deleteCategory: async (id: string): Promise<void> => {
     try {
       if (!id || typeof id !== 'string' || id.trim() === '') {

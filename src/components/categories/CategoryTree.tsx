@@ -7,7 +7,10 @@ import {
   ChevronRightIcon, 
   ChevronDownIcon,
   PlusIcon,
-  Loader2Icon
+  Loader2Icon,
+  LockIcon,
+  ShieldIcon,
+  UserIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Category } from '@/services/categoryService';
@@ -55,6 +58,15 @@ const CategoryNode = ({ category, level, onSelect }: CategoryNodeProps) => {
     }
   };
 
+  // Determinar icono especial para categorías del sistema vs. usuario
+  const getCategoryIcon = () => {
+    if (category.isSystem) {
+      return <ShieldIcon className="h-4 w-4 text-blue-600 mr-1" />;
+    } else {
+      return <UserIcon className="h-4 w-4 text-green-600 mr-1" />;
+    }
+  };
+
   return (
     <div className="category-node">
       <div 
@@ -89,12 +101,28 @@ const CategoryNode = ({ category, level, onSelect }: CategoryNodeProps) => {
           />
           <span className="truncate">{category.name}</span>
           
-          {category.isPublic && (
-            <Badge className="ml-2 bg-green-100 text-green-800">
-              Pública
-            </Badge>
-          )}
+          <div className="ml-2 flex items-center space-x-1">
+            {getCategoryIcon()}
+            
+            {!category.isPublic && !category.isSystem && (
+              <LockIcon className="h-3 w-3 text-gray-500" />
+            )}
+          </div>
         </div>
+        
+        {/* Botón para añadir subcategoría sólo visible al pasar el ratón */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/dashboard/categories/new?parentId=${category.id}`);
+          }}
+          title="Añadir subcategoría"
+        >
+          <PlusIcon className="h-4 w-4" />
+        </Button>
       </div>
       
       {expanded && children.length > 0 && (
@@ -156,14 +184,16 @@ export function CategoryTree({ onSelectCategory }: CategoryTreeProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-md">Jerarquía de Categorías</CardTitle>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => router.push('/dashboard/categories/new')}
-        >
-          <PlusIcon className="h-4 w-4 mr-1" />
-          Nueva
-        </Button>
+        <div className="flex items-center space-x-2 text-xs text-gray-500">
+          <div className="flex items-center">
+            <ShieldIcon className="h-3 w-3 text-blue-600 mr-1" />
+            <span>Sistema</span>
+          </div>
+          <div className="flex items-center">
+            <UserIcon className="h-3 w-3 text-green-600 mr-1" />
+            <span>Personal</span>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {!rootCategories || rootCategories.length === 0 ? (

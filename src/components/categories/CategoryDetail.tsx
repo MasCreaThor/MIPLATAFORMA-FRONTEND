@@ -11,7 +11,9 @@ import {
   EyeIcon,
   FolderPlusIcon,
   UsersIcon,
-  LockIcon
+  LockIcon,
+  ShieldIcon,
+  UserIcon
 } from 'lucide-react';
 import { Category } from '@/services/categoryService';
 import { formatDate, stringToColor } from '@/lib/utils';
@@ -66,10 +68,22 @@ export function CategoryDetail({ category, isLoading = false }: CategoryDetailPr
   }
 
   const handleEdit = () => {
+    // No permitir editar categorías del sistema
+    if (category.isSystem) {
+      setError('No se pueden editar las categorías del sistema');
+      return;
+    }
+    
     router.push(`/dashboard/categories/edit/${category.id}`);
   };
 
   const handleDelete = async () => {
+    // No permitir eliminar categorías del sistema
+    if (category.isSystem) {
+      setError('No se pueden eliminar las categorías del sistema');
+      return;
+    }
+    
     if (!category.id) {
       setError('Error: ID de categoría no disponible');
       return;
@@ -90,6 +104,25 @@ export function CategoryDetail({ category, isLoading = false }: CategoryDetailPr
     router.push(`/dashboard/categories/new?parentId=${category.id}`);
   };
 
+  // Componente para mostrar un badge con el tipo de categoría
+  const CategoryTypeBadge = () => {
+    if (category.isSystem) {
+      return (
+        <Badge className="bg-blue-100 text-blue-800 flex items-center">
+          <ShieldIcon className="h-3 w-3 mr-1" />
+          Sistema
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge className="bg-green-100 text-green-800 flex items-center">
+          <UserIcon className="h-3 w-3 mr-1" />
+          Personal
+        </Badge>
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       {error && (
@@ -105,18 +138,40 @@ export function CategoryDetail({ category, isLoading = false }: CategoryDetailPr
             style={{ color: category.color || stringToColor(category.name) }}
           />
           <span>{category.name}</span>
-          {category.isPublic && (
-            <Badge className="ml-2 bg-green-100 text-green-800">
-              Pública
-            </Badge>
-          )}
+          <div className="ml-2 flex space-x-2">
+            <CategoryTypeBadge />
+            
+            {!category.isPublic && !category.isSystem && (
+              <Badge className="bg-gray-100 text-gray-800 flex items-center">
+                <LockIcon className="h-3 w-3 mr-1" />
+                Privada
+              </Badge>
+            )}
+            
+            {category.isPublic && !category.isSystem && (
+              <Badge className="bg-green-100 text-green-800 flex items-center">
+                <UsersIcon className="h-3 w-3 mr-1" />
+                Pública
+              </Badge>
+            )}
+          </div>
         </h1>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleEdit}>
+          <Button 
+            variant="outline" 
+            onClick={handleEdit}
+            disabled={category.isSystem}
+            title={category.isSystem ? "No se pueden editar categorías del sistema" : "Editar categoría"}
+          >
             <EditIcon className="mr-2 h-4 w-4" />
             Editar
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+          <Button 
+            variant="destructive" 
+            onClick={handleDelete} 
+            disabled={isDeleting || category.isSystem}
+            title={category.isSystem ? "No se pueden eliminar categorías del sistema" : "Eliminar categoría"}
+          >
             <TrashIcon className="mr-2 h-4 w-4" />
             Eliminar
           </Button>
@@ -146,6 +201,12 @@ export function CategoryDetail({ category, isLoading = false }: CategoryDetailPr
                         hacer una consulta adicional para obtenerlo */}
                     ID: {category.parentId}
                   </p>
+                </div>
+              )}
+              
+              {category.isSystem && (
+                <div className="p-3 bg-blue-50 rounded-md text-blue-800 text-sm">
+                  <p>Esta es una categoría del sistema que sirve como categoría principal. Puedes crear tus propias subcategorías personalizadas bajo esta categoría.</p>
                 </div>
               )}
             </CardContent>
@@ -183,7 +244,7 @@ export function CategoryDetail({ category, isLoading = false }: CategoryDetailPr
             ) : (
               <CategoryList 
                 categories={childCategories} 
-                showControls={false}
+                showControls={true}
               />
             )}
           </div>
@@ -198,28 +259,52 @@ export function CategoryDetail({ category, isLoading = false }: CategoryDetailPr
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center text-sm">
-                  {category.isPublic ? (
-                    <>
-                      <UsersIcon className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>Visible para todos los usuarios</span>
-                    </>
-                  ) : (
-                    <>
-                      <LockIcon className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>Privada (solo tú puedes verla)</span>
-                    </>
-                  )}
+                  <div className="flex items-center flex-1">
+                    <span className="font-medium mr-2">Tipo:</span>
+                    {category.isSystem ? (
+                      <span className="flex items-center">
+                        <ShieldIcon className="h-4 w-4 text-blue-600 mr-1" />
+                        Sistema
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <UserIcon className="h-4 w-4 text-green-600 mr-1" />
+                        Personal
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex items-center text-sm">
-                  <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>Creado: {formatDate(category.createdAt)}</span>
+                  <div className="flex items-center flex-1">
+                    <span className="font-medium mr-2">Visibilidad:</span>
+                    {category.isPublic || category.isSystem ? (
+                      <span className="flex items-center">
+                        <UsersIcon className="h-4 w-4 text-green-600 mr-1" />
+                        {category.isSystem ? 'Visible para todos los usuarios' : 'Pública'}
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <LockIcon className="h-4 w-4 text-gray-600 mr-1" />
+                        Privada (solo tú puedes verla)
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="flex items-center text-sm">
-                  <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>Actualizado: {formatDate(category.updatedAt)}</span>
-                </div>
+                {!category.isSystem && (
+                  <>
+                    <div className="flex items-center text-sm">
+                      <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
+                      <span>Creado: {formatDate(category.createdAt)}</span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm">
+                      <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
+                      <span>Actualizado: {formatDate(category.updatedAt)}</span>
+                    </div>
+                  </>
+                )}
 
                 <div className="pt-4 border-t border-gray-200">
                   <h3 className="text-sm font-medium mb-2">Color</h3>

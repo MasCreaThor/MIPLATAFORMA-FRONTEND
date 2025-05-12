@@ -11,7 +11,10 @@ import {
   EyeIcon,
   EditIcon,
   TrashIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ShieldIcon,
+  LockIcon,
+  UserIcon
 } from 'lucide-react';
 import { Category } from '@/services/categoryService';
 import { formatDate, stringToColor } from '@/lib/utils';
@@ -62,15 +65,35 @@ export function CategoryList({
     }
   };
 
-  // Función para editar una categoría
-  const handleEditCategory = (e: React.MouseEvent, id: string) => {
+  // Función para crear una subcategoría
+  const handleCreateSubcategory = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    router.push(`/dashboard/categories/new?parentId=${id}`);
+  };
+
+  // Función para editar una categoría
+  const handleEditCategory = (e: React.MouseEvent, id: string, isSystem: boolean) => {
+    e.stopPropagation();
+    
+    // No permitir editar categorías del sistema
+    if (isSystem) {
+      alert('Las categorías del sistema no pueden ser editadas');
+      return;
+    }
+    
     router.push(`/dashboard/categories/edit/${id}`);
   };
 
   // Función para eliminar una categoría
-  const handleDeleteCategory = (e: React.MouseEvent, id: string, name: string) => {
+  const handleDeleteCategory = (e: React.MouseEvent, id: string, name: string, isSystem: boolean) => {
     e.stopPropagation();
+    
+    // No permitir eliminar categorías del sistema
+    if (isSystem) {
+      alert('Las categorías del sistema no pueden ser eliminadas');
+      return;
+    }
+    
     if (window.confirm(`¿Estás seguro de que quieres eliminar la categoría "${name}"?`)) {
       deleteCategory(id, {
         onSuccess: () => {
@@ -124,10 +147,31 @@ export function CategoryList({
             />
           </div>
           
-          <Button onClick={() => router.push('/dashboard/categories/new')}>
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Nueva Categoría
-          </Button>
+          <div className="flex items-center space-x-4">
+            {/* Leyenda de iconos */}
+            <div className="flex items-center mr-4 text-xs text-gray-500 space-x-3">
+              <div className="flex items-center">
+                <ShieldIcon className="h-3 w-3 text-blue-600 mr-1" />
+                <span>Sistema</span>
+              </div>
+              <div className="flex items-center">
+                <UserIcon className="h-3 w-3 text-green-600 mr-1" />
+                <span>Personal</span>
+              </div>
+            </div>
+            
+            {/* Botón para añadir sólo si hay categorías del sistema */}
+            {filteredCategories.some(category => category.isSystem) && (
+              <Button 
+                onClick={() => router.push('/dashboard/categories/new')}
+              >
+                <span className="flex items-center">
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Nueva Subcategoría
+                </span>
+              </Button>
+            )}
+          </div>
         </div>
       )}
       
@@ -149,13 +193,33 @@ export function CategoryList({
                     className="h-5 w-5 mr-2" 
                     style={{ color: category.color || stringToColor(category.name) }} 
                   />
-                  <h3 className="font-medium">{category.name}</h3>
+                  <div className="flex items-center">
+                    <h3 className="font-medium">{category.name}</h3>
+                    
+                    {/* Icono para indicar si es del sistema o personal */}
+                    <div className="ml-2">
+                      {category.isSystem ? (
+                        <span>
+                          <ShieldIcon className="h-4 w-4 text-blue-600" aria-label="Categoría del sistema" />
+                          <span className="sr-only">Categoría del sistema</span>
+                        </span>
+                      ) : (
+                        <span>
+                          <UserIcon className="h-4 w-4 text-green-600" aria-label="Categoría personal" />
+                          <span className="sr-only">Categoría personal</span>
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Icono de privacidad */}
+                    {!category.isPublic && !category.isSystem && (
+                      <span>
+                        <LockIcon className="h-4 w-4 ml-1 text-gray-500" aria-label="Categoría privada" />
+                        <span className="sr-only">Categoría privada</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {category.isPublic && (
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                    Pública
-                  </Badge>
-                )}
               </div>
               
               <p className="text-sm text-gray-500 mb-4">
@@ -164,33 +228,52 @@ export function CategoryList({
               
               <div className="mt-auto flex justify-between items-center">
                 <span className="text-xs text-gray-500">
-                  Creado: {formatDate(category.createdAt)}
+                  {category.isSystem ? 'Categoría del sistema' : `Creado: ${formatDate(category.createdAt)}`}
                 </span>
                 
                 {showControls && (
                   <div className="flex space-x-2">
+                    {/* Botón para crear subcategoría (siempre disponible) */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => handleCreateSubcategory(e, category.id)}
+                      className="h-8 w-8 p-0"
+                      aria-label="Añadir subcategoría"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                    </Button>
+                    
+                    {/* Botón para ver detalles */}
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={(e) => handleCategoryClick(category.id)}
                       className="h-8 w-8 p-0"
+                      aria-label="Ver detalles"
                     >
                       <EyeIcon className="h-4 w-4" />
                     </Button>
+                    
+                    {/* Botón para editar (solo para categorías del usuario) */}
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={(e) => handleEditCategory(e, category.id)}
-                      className="h-8 w-8 p-0"
+                      onClick={(e) => handleEditCategory(e, category.id, Boolean(category.isSystem))}
+                      className={`h-8 w-8 p-0 ${category.isSystem ? 'text-gray-300 cursor-not-allowed' : ''}`}
+                      aria-label={category.isSystem ? 'No se puede editar categoría del sistema' : 'Editar categoría'}
                     >
                       <EditIcon className="h-4 w-4" />
                     </Button>
+                    
+                    {/* Botón para eliminar (solo para categorías del usuario) */}
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={(e) => handleDeleteCategory(e, category.id, category.name)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                      disabled={isDeleting}
+                      onClick={(e) => handleDeleteCategory(e, category.id, category.name, Boolean(category.isSystem))}
+                      className={`h-8 w-8 p-0 ${category.isSystem ? 'text-gray-300 cursor-not-allowed' : 'text-red-500 hover:text-red-700'}`}
+                      disabled={isDeleting || Boolean(category.isSystem)}
+                      aria-label={category.isSystem ? 'No se puede eliminar categoría del sistema' : 'Eliminar categoría'}
                     >
                       <TrashIcon className="h-4 w-4" />
                     </Button>
