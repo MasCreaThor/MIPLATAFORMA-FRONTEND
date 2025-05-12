@@ -70,6 +70,11 @@ export function CategoryDetail({ category, isLoading = false }: CategoryDetailPr
   };
 
   const handleDelete = async () => {
+    if (!category.id) {
+      setError('Error: ID de categoría no disponible');
+      return;
+    }
+
     if (window.confirm(`¿Estás seguro de que quieres eliminar la categoría "${category.name}"? Esta acción no se puede deshacer.`)) {
       try {
         await deleteCategory(category.id);

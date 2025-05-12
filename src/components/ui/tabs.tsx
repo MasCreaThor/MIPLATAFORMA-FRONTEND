@@ -110,14 +110,16 @@ TabsTrigger.displayName = "TabsTrigger";
 interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {
   value: string;
   selectedValue?: string;
+  onValueChange?: (value: string) => void;
 }
 
 const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
-  ({ className, value, selectedValue, children, ...props }, ref) => {
+  ({ className, value, selectedValue, children, onValueChange, ...props }, ref) => {
     const isActive = value === selectedValue;
 
     if (!isActive) return null;
 
+    // Eliminamos onValueChange de las props para que no se pase al div
     return (
       <div
         ref={ref}

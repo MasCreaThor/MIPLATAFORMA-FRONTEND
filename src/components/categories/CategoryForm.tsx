@@ -63,11 +63,22 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
     try {
       setError(null);
 
-      // Convertir parentId vacío a undefined
-      const formData = { 
-        ...data, 
-        parentId: data.parentId && data.parentId !== '' ? data.parentId : undefined 
+      // Limpiar y preparar los datos del formulario
+      const formData = {
+        ...data,
+        name: data.name.trim(), // Eliminar espacios en blanco
+        description: data.description?.trim() || undefined,
+        // Convertir parentId vacío a undefined
+        parentId: data.parentId && data.parentId.trim() !== '' ? data.parentId : undefined,
+        // Asegurarse de que color sea un string válido
+        color: data.color && data.color.trim() !== '' ? data.color : undefined,
+        // Asegurarse de que icon sea un string válido
+        icon: data.icon && data.icon.trim() !== '' ? data.icon : undefined,
+        // Asegurarse de que isPublic sea un booleano
+        isPublic: Boolean(data.isPublic)
       };
+
+      console.log('Enviando datos de categoría:', formData);
 
       if (isEdit && initialData?.id) {
         await updateCategory(formData);
@@ -78,7 +89,8 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
       router.push('/dashboard/categories');
     } catch (err: any) {
       console.error('Error submitting category:', err);
-      setError(err.response?.data?.message || 'Error al guardar la categoría');
+      const errorMessage = err.response?.data?.message || err.message || 'Error al guardar la categoría';
+      setError(errorMessage);
     }
   };
 
@@ -125,14 +137,16 @@ export function CategoryForm({ initialData, isEdit = false }: CategoryFormProps)
             error={errors.parentId?.message}
           >
             <option value="">-- Sin categoría padre --</option>
-            {parentCategories?.map((category) => (
+                          {parentCategories?.map((category, index) => {
               // Evitar que una categoría sea su propio padre en modo edición
-              isEdit && category.id === initialData?.id ? null : (
-                <option key={category.id} value={category.id}>
+              if (isEdit && category.id === initialData?.id) return null;
+              
+              return (
+                <option key={category.id || `parent-option-${index}`} value={category.id}>
                   {category.name}
                 </option>
-              )
-            ))}
+              );
+            })}
           </Select>
           {parentCategoriesLoading && (
             <p className="mt-1 text-sm text-gray-500">Cargando categorías...</p>

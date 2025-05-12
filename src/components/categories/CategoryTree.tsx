@@ -99,9 +99,9 @@ const CategoryNode = ({ category, level, onSelect }: CategoryNodeProps) => {
       
       {expanded && children.length > 0 && (
         <div className="children">
-          {children.map((child) => (
+          {children.map((child, index) => (
             <CategoryNode 
-              key={child.id} 
+              key={child.id || `child-category-${level}-${index}`} 
               category={child} 
               level={level + 1} 
               onSelect={onSelect}
@@ -172,9 +172,9 @@ export function CategoryTree({ onSelectCategory }: CategoryTreeProps) {
           </div>
         ) : (
           <div className="space-y-1">
-            {rootCategories.map((category) => (
+            {rootCategories.map((category, index) => (
               <CategoryNode 
-                key={category.id} 
+                key={category.id || `root-category-${index}`} 
                 category={category} 
                 level={0}
                 onSelect={onSelectCategory}

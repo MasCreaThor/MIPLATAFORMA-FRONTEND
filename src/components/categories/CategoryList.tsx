@@ -49,7 +49,12 @@ export function CategoryList({
   );
 
   // Función para manejar cuando se hace clic en una categoría
-  const handleCategoryClick = (id: string) => {
+  const handleCategoryClick = (id?: string) => {
+    if (!id) {
+      console.error('Error: ID de categoría no disponible');
+      return;
+    }
+    
     if (onCategoryClick) {
       onCategoryClick(id);
     } else {
@@ -132,9 +137,9 @@ export function CategoryList({
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCategories.map((category) => (
+          {filteredCategories.map((category, index) => (
             <Card 
-              key={category.id}
+              key={category.id || `category-${index}`}
               className="p-4 h-full hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => handleCategoryClick(category.id)}
             >
